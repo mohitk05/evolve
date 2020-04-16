@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+
+<head>
+    <title>Evolve - The Game of Insanity</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://unpkg.com/uuid@latest/dist/umd/uuidv4.min.js"></script>
+    <script src="three.js"></script>
+    <script src="main.js"></script>
+    <style>
+        body {
+            font-family: monospace;
+            background: #16161d;
+            color: #eeeeee;
+        }
+
+        canvas {
+            border: 2px solid;
+        }
+
+        .mainDiv {
+            display: flex;
+        }
+
+        th {
+            text-align: left;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 2px solid #333;
+            max-width: 200px;
+            padding: 2px 5px;
+        }
+
+        #groups {
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        #groups>div {
+            color: #333333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            margin-right: 5px;
+            font-size: 0.8em;
+            width: 40px;
+            height: 20px;
+            margin-top: 5px;
+        }
+
+        button {
+            background: #eeeeee;
+            color: #16161d;
+            padding: 5px 10px;
+            border: none;
+            font-family: monospace;
+            cursor: pointer;
+            filter: drop-shadow(2px 2px 0 #000);
+            outline: none;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button:active {
+            filter: drop-shadow(0 0 0 #000);
+        }
+
+        .modalContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #16161d;
+        }
+
+        .modal {
+            top: 10%;
+            left: 20%;
+            background: #333;
+            width: 60%;
+            padding: 40px;
+        }
+
+        .result {
+            display: none;
+        }
+
+        @media screen and (max-width:768px) {
+            body {
+                margin: 0;
+                background: #282835;
+            }
+
+            canvas {
+                border: none;
+            }
+
+            .mainDiv {
+                flex-direction: column;
+                margin-bottom: 20px;
+            }
+
+            .modalContainer {
+                justify-content: flex-start;
+                height: auto;
+            }
+
+            .modal {
+                width: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="mainDiv" id="mainDiv">
+        <canvas id="main" height="700" width="700"></canvas>
+        <div style="max-height: 700px; overflow: auto; margin-left: 20px">
+            <h1>Evolve - The Game of Insanity</h1>
+            <label for="newMemory"><b>Introduce a new message into the City like:</b></label><br>
+            <span>The city received the best public safety
+                award. OR I love how clean the bus stops are!</span><br>
+            <textarea type="text" id="newMemory" style="margin-top: 5px;"></textarea><br>
+            <button onclick="addNewMemory()" id="addNewMemory">Add</button>
+            <p id="timer"></p>
+            <div id="heat"></div>
+            <h2 id="cityInsanity"></h2>
+            <h4 style="margin: 0">Active groups talking</h4>
+            <div id="groups" style="display: flex;"></div>
+            <table id="memories">
+
+            </table>
+        </div>
+    </div>
+    <div id="introModalContainer" class="modalContainer">
+        <div class="modal">
+            <h1>Evolve - The Game of Insanity</h1>
+            <button id="beginGame">Begin Game</button>
+            <p>Welcome to your very own city! Evolve is a simulation game where there exists a city with certain rules.
+                Read
+                the following rules carefully before proceeding:</p>
+            <h4><mark>TLDR</mark></h4>
+            <p>This city has people and they pass messages to each other. Depending on the type of message, the listener
+                either gets mad or gets less mad. The overall city has an insanity (madness) average - which you have to
+                keep under some limit and prevent the city from collapsing.</p>
+            <p>The <span style="color: red">red</span>/<span style="color: yellow">yellow</span> dots you'll see on the
+                screen are the people.</p>
+            <h4>RULES</h4>
+            <ol>
+                <li>When you start the game, the universe starts adding people to the city.</li>
+                <li>As soon as a person is added, they go about roaming all over the city area - which is bounded by
+                    certain
+                    borders.</li>
+                <li>While travelling, if a person meets some other person, they stop moving and start taking. Gossip is
+                    the favourite
+                    passtime here.</li>
+                <li>Any other person travelling close enough to these people talking can also join the conversation.
+                </li>
+                <li>When people were added to the city, a handful of them were born with a memory - a message passed
+                    down by
+                    the universe.</li>
+                <li>And when these people with memories talk to others, they tend to share the message with them.</li>
+                <li>This passing of message goes on as people keep on meeting others.</li>
+                <li>Every person has a level of insanity related to them. This shows a measure of how mad/angry/panicked
+                    the
+                    individual is.</li>
+                <li>Averaged on all the people is the city's overall insanity.</li>
+                <li>When people talk, and pass a message, depending on the type of message, the listener's insanity
+                    either
+                    goes up or goes down.</li>
+                <li>The universe constantly tries to increase the overall insanity in various ways, it just loves to see
+                    the
+                    city collapse (saddistic huh).</li>
+                <li><b><mark>Your aim is to prevent the city from collapsing. You have to reduce the city's insanity and
+                            keep
+                            it
+                            under the max limit for 180 seconds.</mark></b></li>
+            </ol>
+        </div>
+    </div>
+    <div class="modalContainer result" id="loseModal">
+        <div class="modal">
+            <h1>Your city succumbed to its own insanity. :(</h1>
+            <button onclick="beginAgain()">Start Again</button>
+        </div>
+    </div>
+    <div class="modalContainer result" id="winModal">
+        <div class="modal">
+            <h1>Congrats! You saved your city!</h1>
+            <p>Hope you combat fake news in the same way in your real life. Save the world from the probable insanity,
+                spread the truth.</p>
+            <button onclick="beginAgain()">Start Again</button>
+        </div>
+    </div>
+    <!--<ol>
+Rules:
+<li>The game generates people at some rate n people/minute.</li>
+<li>After certain time, a person starts moving from their initial position.</li>
+<li>If they come in vicinity of another person, they both stop and interact for some time.</li>
+<li>When a person talks, they pass on some message to the person they are talking to. This message is part of the person's memory.</li>
+<li>Every person has a level of insanity. If insanity goes beyond certain point they break a thing.</li>
+<li>Similarly, every message has a insanity quotient (iQ). When a message is passed to a person, the receiver's insanity rises by iQ.</li>
+<li>Also, whether the person listening to the message will accept the message depends on their gullibility. If the receiver's gullibility is more than the speakers, the message is passed and receiver's insanity is updated.</li>
+<li>At any point if the overall level of insanity of the city goes up, city is destroyed.</li>
+<li>Insanity can be reduced by starting multiple random unconnected messages from a point and let them spread. These messages can nullify the insanity upto some extent.</li>
+<li>If done in right amount until some limited time, the city is saved.</li>
+<li>P.s. The universe randomly adds insane messages if it sees the net insanity falling.</li>
+<li>CRUX: The city has to survive insanity until some limited time.</li>
+</ol>-->
+</body>
+
+</html>
